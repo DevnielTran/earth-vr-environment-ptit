@@ -1,0 +1,1385 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>COSMOS — Earth VR Universe</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        overflow: hidden;
+        background: #000;
+      }
+
+      a-scene {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* ─── HUD OVERLAY ─── */
+      #hud {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 100;
+        font-family: "Rajdhani", sans-serif;
+      }
+
+      /* Corner scan-line effect */
+      #hud::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 200, 255, 0.012) 2px,
+          rgba(0, 200, 255, 0.012) 4px
+        );
+        pointer-events: none;
+      }
+
+      /* ─── TITLE ─── */
+      #title-bar {
+        position: absolute;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        pointer-events: none;
+      }
+      #title-bar h1 {
+        font-family: "Orbitron", monospace;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 8px;
+        color: #00d4ff;
+        text-shadow:
+          0 0 20px rgba(0, 212, 255, 0.8),
+          0 0 40px rgba(0, 212, 255, 0.3);
+        animation: titlePulse 3s ease-in-out infinite;
+      }
+      #title-bar span {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 4px;
+        color: rgba(255, 255, 255, 0.3);
+        margin-top: 4px;
+        text-transform: uppercase;
+      }
+      @keyframes titlePulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      /* ─── CORNER BRACKETS ─── */
+      .corner {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        pointer-events: none;
+      }
+      .corner::before,
+      .corner::after {
+        content: "";
+        position: absolute;
+        background: #00d4ff;
+        box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+      }
+      .corner::before {
+        width: 2px;
+        height: 100%;
+      }
+      .corner::after {
+        width: 100%;
+        height: 2px;
+      }
+      .corner.tl {
+        top: 16px;
+        left: 16px;
+      }
+      .corner.tr {
+        top: 16px;
+        right: 16px;
+        transform: scaleX(-1);
+      }
+      .corner.bl {
+        bottom: 16px;
+        left: 16px;
+        transform: scaleY(-1);
+      }
+      .corner.br {
+        bottom: 16px;
+        right: 16px;
+        transform: scale(-1);
+      }
+
+      /* ─── LEFT PANEL ─── */
+      #panel-left {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        pointer-events: all;
+      }
+
+      .panel-label {
+        font-family: "Orbitron", monospace;
+        font-size: 8px;
+        letter-spacing: 3px;
+        color: rgba(0, 212, 255, 0.5);
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        padding-left: 2px;
+      }
+
+      .hud-btn {
+        position: relative;
+        width: 160px;
+        height: 38px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(0, 212, 255, 0.25);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        transition: all 0.2s ease;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 8px) 0,
+          100% 8px,
+          100% 100%,
+          8px 100%,
+          0 calc(100% - 8px)
+        );
+        overflow: hidden;
+      }
+
+      .hud-btn::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 2px;
+        height: 100%;
+        background: #00d4ff;
+        box-shadow: 0 0 8px #00d4ff;
+        transition: all 0.3s;
+      }
+
+      .hud-btn::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          rgba(0, 212, 255, 0.08) 0%,
+          transparent 60%
+        );
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .hud-btn:hover {
+        border-color: rgba(0, 212, 255, 0.7);
+        background: rgba(0, 30, 50, 0.9);
+        transform: translateX(4px);
+        box-shadow:
+          0 0 20px rgba(0, 212, 255, 0.15),
+          inset 0 0 20px rgba(0, 212, 255, 0.05);
+      }
+      .hud-btn:hover::after {
+        opacity: 1;
+      }
+
+      .hud-btn:active {
+        transform: translateX(2px) scale(0.99);
+      }
+
+      .btn-icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+        filter: drop-shadow(0 0 4px currentColor);
+        flex-shrink: 0;
+      }
+
+      .btn-text {
+        font-family: "Orbitron", monospace;
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: #fff;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+      .btn-sub {
+        font-family: "Rajdhani", sans-serif;
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.35);
+        letter-spacing: 1px;
+        margin-top: 2px;
+      }
+
+      .hud-btn.active::before {
+        background: #ff6a00;
+        box-shadow: 0 0 8px #ff6a00;
+      }
+      .hud-btn.active {
+        border-color: rgba(255, 106, 0, 0.5);
+      }
+
+      /* Speed indicator */
+      #speed-display {
+        width: 160px;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(0, 212, 255, 0.15);
+        clip-path: polygon(
+          0 0,
+          calc(100% - 8px) 0,
+          100% 8px,
+          100% 100%,
+          8px 100%,
+          0 calc(100% - 8px)
+        );
+      }
+      #speed-display .panel-label {
+        margin-bottom: 6px;
+      }
+      .speed-bar-track {
+        width: 100%;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.1);
+        position: relative;
+        margin-top: 4px;
+      }
+      .speed-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #00d4ff, #0066ff);
+        box-shadow: 0 0 6px #00d4ff;
+        transition: width 0.4s ease;
+      }
+      #speed-value {
+        font-family: "Orbitron", monospace;
+        font-size: 14px;
+        color: #00d4ff;
+        text-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+        letter-spacing: 1px;
+      }
+      .speed-unit {
+        font-size: 8px;
+        color: rgba(255, 255, 255, 0.4);
+        letter-spacing: 2px;
+        margin-left: 4px;
+      }
+
+      /* ─── RIGHT PANEL ─── */
+      #panel-right {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        pointer-events: all;
+        align-items: flex-end;
+      }
+
+      .hud-btn.right {
+        flex-direction: row-reverse;
+        clip-path: polygon(
+          8px 0,
+          100% 0,
+          100% calc(100% - 8px),
+          calc(100% - 0px) 100%,
+          0 100%,
+          0 8px
+        );
+      }
+      .hud-btn.right::before {
+        left: auto;
+        right: 0;
+      }
+      .hud-btn.right:hover {
+        transform: translateX(-4px);
+      }
+      .hud-btn.right:active {
+        transform: translateX(-2px) scale(0.99);
+      }
+      .hud-btn.right::after {
+        background: linear-gradient(
+          270deg,
+          rgba(0, 212, 255, 0.08) 0%,
+          transparent 60%
+        );
+      }
+
+      /* ─── BOTTOM STATUS BAR ─── */
+      #status-bar {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        pointer-events: none;
+      }
+
+      .status-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+
+      .status-item .label {
+        font-family: "Orbitron", monospace;
+        font-size: 7px;
+        letter-spacing: 2px;
+        color: rgba(255, 255, 255, 0.3);
+        text-transform: uppercase;
+      }
+      .status-item .value {
+        font-family: "Orbitron", monospace;
+        font-size: 11px;
+        color: #00d4ff;
+        text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+        letter-spacing: 1px;
+      }
+
+      .status-sep {
+        width: 1px;
+        height: 28px;
+        background: linear-gradient(
+          180deg,
+          transparent,
+          rgba(0, 212, 255, 0.4),
+          transparent
+        );
+      }
+
+      /* ─── MOUSE CONTROL HINT ─── */
+      #control-hint {
+        position: absolute;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 20px;
+        opacity: 0.5;
+        transition: opacity 1s;
+        pointer-events: none;
+      }
+      #control-hint.hidden {
+        opacity: 0;
+      }
+      .hint-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        letter-spacing: 1px;
+      }
+      .hint-icon {
+        font-size: 18px;
+        opacity: 0.6;
+      }
+
+      /* ─── LANDMARK POPUP ─── */
+      #landmark-popup {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        border: 1px solid rgba(0, 212, 255, 0.4);
+        padding: 10px 20px;
+        clip-path: polygon(
+          0 0,
+          calc(100% - 12px) 0,
+          100% 12px,
+          100% 100%,
+          12px 100%,
+          0 calc(100% - 12px)
+        );
+        opacity: 0;
+        transition: opacity 0.4s;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      #landmark-popup.show {
+        opacity: 1;
+      }
+      #landmark-popup .lm-title {
+        font-family: "Orbitron", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: #00d4ff;
+      }
+      #landmark-popup .lm-sub {
+        font-family: "Rajdhani", sans-serif;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.4);
+        letter-spacing: 1px;
+      }
+
+      /* ─── CROSSHAIR ─── */
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 24px;
+        height: 24px;
+        pointer-events: none;
+      }
+      #crosshair::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 0;
+        width: 1px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.5);
+        transform: translateX(-50%);
+      }
+      #crosshair::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.5);
+        transform: translateY(-50%);
+      }
+      .crosshair-dot {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background: #00d4ff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 6px #00d4ff;
+        animation: dotPulse 2s ease-in-out infinite;
+      }
+      @keyframes dotPulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: translate(-50%, -50%) scale(1.5);
+        }
+      }
+
+      /* ─── NOTIFICATION TOAST ─── */
+      #toast {
+        position: absolute;
+        top: 70px;
+        right: 200px;
+        background: rgba(0, 0, 0, 0.8);
+        border-left: 2px solid #00d4ff;
+        padding: 8px 16px;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 13px;
+        color: #fff;
+        letter-spacing: 1px;
+        opacity: 0;
+        transform: translateX(10px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+      }
+      #toast.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* ─── POINTER LOCK UI ─── */
+      #pointer-lock-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 10, 0.92);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 999;
+        cursor: pointer;
+        transition: opacity 0.5s;
+      }
+      #pointer-lock-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .lock-ring {
+        width: 90px;
+        height: 90px;
+        border: 2px solid rgba(0, 212, 255, 0.4);
+        border-top-color: #00d4ff;
+        border-radius: 50%;
+        animation: spin 2s linear infinite;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        box-shadow:
+          0 0 30px rgba(0, 212, 255, 0.2),
+          inset 0 0 30px rgba(0, 212, 255, 0.05);
+      }
+      .lock-icon {
+        font-size: 32px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .lock-title {
+        font-family: "Orbitron", monospace;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 6px;
+        color: #00d4ff;
+        text-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        margin-bottom: 8px;
+      }
+      .lock-sub {
+        font-family: "Rajdhani", sans-serif;
+        font-size: 14px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.35);
+        text-transform: uppercase;
+        margin-bottom: 32px;
+      }
+      .lock-key {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 24px;
+        border: 1px solid rgba(0, 212, 255, 0.4);
+        font-family: "Orbitron", monospace;
+        font-size: 10px;
+        letter-spacing: 3px;
+        color: rgba(255, 255, 255, 0.6);
+        clip-path: polygon(
+          0 0,
+          calc(100% - 8px) 0,
+          100% 8px,
+          100% 100%,
+          8px 100%,
+          0 calc(100% - 8px)
+        );
+        animation: btnGlow 2s ease-in-out infinite;
+      }
+      @keyframes btnGlow {
+        0%,
+        100% {
+          border-color: rgba(0, 212, 255, 0.4);
+          box-shadow: none;
+        }
+        50% {
+          border-color: rgba(0, 212, 255, 0.8);
+          box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+      }
+
+      .esc-hint {
+        position: absolute;
+        bottom: 30px;
+        font-family: "Rajdhani", sans-serif;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.2);
+        letter-spacing: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Pointer Lock Entry Screen -->
+    <div id="pointer-lock-screen">
+      <div class="lock-ring"><span class="lock-icon">🌍</span></div>
+      <div class="lock-title">COSMOS</div>
+      <div class="lock-sub">Earth VR Universe · Premium</div>
+      <div class="lock-key">🖱 CLICK TO ENTER SPACE</div>
+      <div class="esc-hint">
+        PRESS ESC TO EXIT · MOUSE TO LOOK · WASD TO FLY
+      </div>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <!-- Corner brackets -->
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <!-- Title -->
+      <div id="title-bar">
+        <h1>COSMOS</h1>
+        <span>Earth VR Universe · Premium Edition</span>
+      </div>
+
+      <!-- Crosshair -->
+      <div id="crosshair"><div class="crosshair-dot"></div></div>
+
+      <!-- Left Panel -->
+      <div id="panel-left">
+        <div class="panel-label">Navigation</div>
+
+        <div class="hud-btn" id="btn-fast">
+          <span class="btn-icon" style="color: #00d4ff">⚡</span>
+          <div>
+            <div class="btn-text">Faster</div>
+            <div class="btn-sub">Increase rotation</div>
+          </div>
+        </div>
+
+        <div class="hud-btn" id="btn-slow">
+          <span class="btn-icon" style="color: #888">🌀</span>
+          <div>
+            <div class="btn-text">Slower</div>
+            <div class="btn-sub">Decrease rotation</div>
+          </div>
+        </div>
+
+        <div class="hud-btn" id="btn-reset">
+          <span class="btn-icon" style="color: #ff6a00">↺</span>
+          <div>
+            <div class="btn-text">Reset</div>
+            <div class="btn-sub">Default speed</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px">
+          <div id="speed-display">
+            <div class="panel-label">Rotation Speed</div>
+            <div>
+              <span id="speed-value">1.0</span><span class="speed-unit">×</span>
+            </div>
+            <div class="speed-bar-track">
+              <div
+                class="speed-bar-fill"
+                id="speed-bar"
+                style="width: 50%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div id="panel-right">
+        <div class="panel-label" style="text-align: right">Controls</div>
+
+        <div class="hud-btn right" id="btn-landmarks">
+          <span class="btn-icon" style="color: #ff6a00">📍</span>
+          <div style="text-align: right">
+            <div class="btn-text">Landmarks</div>
+            <div class="btn-sub">Toggle markers</div>
+          </div>
+        </div>
+
+        <div class="hud-btn right" id="btn-time">
+          <span class="btn-icon" style="color: #ffd700">☀</span>
+          <div style="text-align: right">
+            <div class="btn-text">Skip Time</div>
+            <div class="btn-sub">+90° Sun orbit</div>
+          </div>
+        </div>
+
+        <div class="hud-btn right" id="btn-atmosphere">
+          <span class="btn-icon" style="color: #44aaff">🌫</span>
+          <div style="text-align: right">
+            <div class="btn-text">Atmosphere</div>
+            <div class="btn-sub">Toggle clouds</div>
+          </div>
+        </div>
+
+        <div class="hud-btn right" id="btn-orbit">
+          <span class="btn-icon" style="color: #aa44ff">🪐</span>
+          <div style="text-align: right">
+            <div class="btn-text">Orbit Mode</div>
+            <div class="btn-sub">Circle earth</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Status -->
+      <div id="status-bar">
+        <div class="status-item">
+          <div class="label">Altitude</div>
+          <div class="value" id="stat-alt">4.2 AU</div>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <div class="label">Orbit Period</div>
+          <div class="value" id="stat-period">25.0s</div>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <div class="label">Sun Angle</div>
+          <div class="value" id="stat-sun">0°</div>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <div class="label">Bodies</div>
+          <div class="value">7</div>
+        </div>
+      </div>
+
+      <!-- Control Hints -->
+      <div id="control-hint">
+        <div class="hint-item">
+          <span class="hint-icon">🖱</span>DRAG TO LOOK
+        </div>
+        <div class="hint-item"><span class="hint-icon">⬆⬇</span>WASD FLY</div>
+        <div class="hint-item">
+          <span class="hint-icon">🖱</span>SCROLL ZOOM
+        </div>
+      </div>
+
+      <!-- Toast notification -->
+      <div id="toast"></div>
+    </div>
+
+    <!-- AFRAME SCENE -->
+    <a-scene
+      shadow="type: pcfsoft"
+      renderer="antialias: true; colorManagement: true"
+      cursor="rayOrigin: mouse"
+      raycaster="objects: .clickable"
+      loading-screen="backgroundColor: #000010; dotsColor: #00d4ff"
+    >
+      <a-assets>
+        <img
+          id="earth-day"
+          src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg"
+        />
+        <img
+          id="earth-normal"
+          src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_normal_2048.jpg"
+        />
+        <img
+          id="galaxy"
+          src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/starfield.jpg"
+        />
+        <img
+          id="sun-tex"
+          src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/sun.jpg"
+        />
+        <img
+          id="moon-tex"
+          src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/moon_1024.jpg"
+        />
+      </a-assets>
+
+      <!-- Starfield sky -->
+      <a-sky src="#galaxy" rotation="0 -90 0" radius="500"></a-sky>
+
+      <!-- Ambient deep space light -->
+      <a-light type="ambient" color="#0a0a1a" intensity="0.5"></a-light>
+
+      <!-- Extra star particles (procedural) -->
+      <a-entity id="star-field-extra"></a-entity>
+
+      <!-- ════ SUN SYSTEM ════ -->
+      <a-entity
+        id="sun-group"
+        animation="property: rotation; to: 0 360 0; dur: 40000; loop: true; easing: linear"
+      >
+        <!-- Sun sphere -->
+        <a-sphere
+          id="sun-body"
+          position="22 0 0"
+          radius="2"
+          src="#sun-tex"
+          material="emissive: #ffcc44; emissiveIntensity: 1.5; shader: flat"
+          animation="property: rotation; to: 0 360 0; dur: 20000; loop: true; easing: linear"
+        >
+          <!-- Primary directional light from sun -->
+          <a-light
+            type="directional"
+            intensity="2.5"
+            castShadow="true"
+            shadow-camera-far="100"
+          ></a-light>
+          <!-- Warm point light -->
+          <a-light
+            type="point"
+            intensity="3"
+            distance="80"
+            color="#ffaa33"
+          ></a-light>
+        </a-sphere>
+
+        <!-- Sun corona glow (billboard sprite) -->
+        <a-plane
+          position="22 0 0"
+          width="7"
+          height="7"
+          material="color: #ff8800; transparent: true; opacity: 0.08; shader: flat; side: double"
+          animation="property: rotation; to: 0 360 0; dur: 8000; loop: true; easing: linear"
+        ></a-plane>
+        <a-plane
+          position="22 0 0"
+          width="5.5"
+          height="5.5"
+          material="color: #ffcc44; transparent: true; opacity: 0.12; shader: flat; side: double"
+          animation="property: rotation; to: 0 -360 0; dur: 5000; loop: true; easing: linear"
+        ></a-plane>
+      </a-entity>
+
+      <!-- ════ EARTH SYSTEM ════ -->
+      <a-entity id="earth-system" position="0 1.5 -4" rotation="0 0 23.5">
+        <!-- Earth globe -->
+        <a-sphere
+          id="earth-globe"
+          radius="1.3"
+          src="#earth-day"
+          material="normalMap: #earth-normal; normalTextureRepeat: 1 1; roughness: 0.8; metalness: 0.1"
+          shadow="receive: true; cast: true"
+          animation="property: rotation; to: 0 360 0; loop: true; dur: 25000; easing: linear"
+        >
+          <!-- Landmark pins -->
+          <a-entity id="landmarks" visible="false">
+            <!-- Ho Chi Minh City -->
+            <a-entity rotation="-10.8 -106.6 0">
+              <a-cone
+                position="0 1.32 0"
+                radius-bottom="0.025"
+                radius-top="0"
+                height="0.12"
+                color="#ff4444"
+                material="emissive: #ff0000; emissiveIntensity: 0.5"
+              ></a-cone>
+              <a-text
+                value="HỒ CHÍ MINH"
+                position="0 1.5 0"
+                align="center"
+                width="2.5"
+                color="#ff8888"
+                look-at="[camera]"
+              ></a-text>
+            </a-entity>
+            <!-- Paris -->
+            <a-entity rotation="-48.8 -2.3 0">
+              <a-cone
+                position="0 1.32 0"
+                radius-bottom="0.025"
+                radius-top="0"
+                height="0.12"
+                color="#44ff88"
+                material="emissive: #00ff44; emissiveIntensity: 0.5"
+              ></a-cone>
+              <a-text
+                value="PARIS"
+                position="0 1.5 0"
+                align="center"
+                width="2.5"
+                color="#88ffaa"
+                look-at="[camera]"
+              ></a-text>
+            </a-entity>
+            <!-- New York -->
+            <a-entity rotation="-40.7 74.0 0">
+              <a-cone
+                position="0 1.32 0"
+                radius-bottom="0.025"
+                radius-top="0"
+                height="0.12"
+                color="#4488ff"
+                material="emissive: #0044ff; emissiveIntensity: 0.5"
+              ></a-cone>
+              <a-text
+                value="NEW YORK"
+                position="0 1.5 0"
+                align="center"
+                width="2.5"
+                color="#88aaff"
+                look-at="[camera]"
+              ></a-text>
+            </a-entity>
+            <!-- Tokyo -->
+            <a-entity rotation="-35.7 -139.7 0">
+              <a-cone
+                position="0 1.32 0"
+                radius-bottom="0.025"
+                radius-top="0"
+                height="0.12"
+                color="#ffdd44"
+                material="emissive: #ffcc00; emissiveIntensity: 0.5"
+              ></a-cone>
+              <a-text
+                value="TOKYO"
+                position="0 1.5 0"
+                align="center"
+                width="2.5"
+                color="#ffee88"
+                look-at="[camera]"
+              ></a-text>
+            </a-entity>
+          </a-entity>
+        </a-sphere>
+
+        <!-- Atmosphere glow -->
+        <a-sphere
+          id="atmosphere"
+          radius="1.38"
+          material="color: #44aaff; transparent: true; opacity: 0.18; side: back; shader: flat"
+        ></a-sphere>
+
+        <!-- Outer atmosphere haze -->
+        <a-sphere
+          radius="1.45"
+          material="color: #2266aa; transparent: true; opacity: 0.06; side: back; shader: flat"
+        ></a-sphere>
+
+        <!-- Moon orbit -->
+        <a-entity
+          id="moon-orbit"
+          animation="property: rotation; to: 0 360 0; dur: 12000; loop: true; easing: linear"
+        >
+          <a-sphere
+            id="moon-body"
+            position="3 0 0"
+            radius="0.35"
+            src="#moon-tex"
+            material="roughness: 1; metalness: 0"
+            shadow="receive: true; cast: true"
+            animation="property: rotation; to: 0 360 0; dur: 12000; loop: true; easing: linear"
+          ></a-sphere>
+        </a-entity>
+      </a-entity>
+
+      <!-- ════ DISTANT PLANETS ════ -->
+
+      <!-- Mars -->
+      <a-entity
+        animation="property: rotation; to: 0 360 0; dur: 65000; loop: true; easing: linear"
+        position="0 0 0"
+      >
+        <a-sphere
+          position="35 2 10"
+          radius="0.7"
+          material="color: #cc4411; roughness: 1; emissive: #441100; emissiveIntensity: 0.1"
+          animation="property: rotation; to: 0 360 0; dur: 30000; loop: true; easing: linear"
+        >
+        </a-sphere>
+      </a-entity>
+
+      <!-- Jupiter (large gas giant) -->
+      <a-entity
+        animation="property: rotation; to: 0 360 0; dur: 120000; loop: true; easing: linear"
+        position="0 0 0"
+      >
+        <a-sphere
+          position="-60 -5 20"
+          radius="4"
+          material="color: #c8845a; roughness: 1; emissive: #552200; emissiveIntensity: 0.05"
+          animation="property: rotation; to: 0 360 0; dur: 10000; loop: true; easing: linear"
+        >
+        </a-sphere>
+        <!-- Jupiter rings -->
+        <a-torus
+          position="-60 -5 20"
+          radius="6"
+          radius-tubular="0.08"
+          material="color: #a07050; transparent: true; opacity: 0.4; shader: flat"
+        >
+        </a-torus>
+      </a-entity>
+
+      <!-- Saturn with rings -->
+      <a-entity
+        animation="property: rotation; to: 0 360 0; dur: 200000; loop: true; easing: linear"
+        position="0 0 0"
+      >
+        <a-sphere
+          position="80 10 -40"
+          radius="3"
+          material="color: #d4b483; roughness: 1; emissive: #443300; emissiveIntensity: 0.05"
+        >
+        </a-sphere>
+        <a-torus
+          position="80 10 -40"
+          radius="5.5"
+          radius-tubular="1.2"
+          rotation="85 0 0"
+          material="color: #c4a060; transparent: true; opacity: 0.6; side: double"
+        >
+        </a-torus>
+        <a-torus
+          position="80 10 -40"
+          radius="7"
+          radius-tubular="0.6"
+          rotation="85 0 0"
+          material="color: #a08040; transparent: true; opacity: 0.3; side: double"
+        >
+        </a-torus>
+      </a-entity>
+
+      <!-- Asteroid belt particles -->
+      <a-entity id="asteroid-belt"></a-entity>
+
+      <!-- ════ NEBULA/COSMIC DUST ════ -->
+      <a-sphere
+        radius="200"
+        position="0 0 0"
+        material="color: #0a0020; transparent: true; opacity: 0.3; side: back; shader: flat"
+      >
+      </a-sphere>
+
+      <!-- ════ CAMERA RIG ════ -->
+      <a-entity
+        id="rig"
+        position="0 1.6 4"
+        movement-controls="fly: true; speed: 0.15"
+      >
+        <a-entity
+          id="camera-entity"
+          camera
+          look-controls="pointerLockEnabled: false; reverseMouseDrag: false"
+          position="0 0 0"
+        >
+          <!-- VR Cursor (hidden on desktop) -->
+          <a-entity
+            cursor="fuse: false"
+            raycaster="objects: .clickable"
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.008; radiusOuter: 0.012"
+            material="color: rgba(0,212,255,0.5); shader: flat"
+            visible="false"
+          ></a-entity>
+        </a-entity>
+        <a-entity oculus-touch-controls="hand: left"></a-entity>
+        <a-entity
+          oculus-touch-controls="hand: right"
+          laser-controls="hand: right"
+          raycaster="objects: .clickable"
+        ></a-entity>
+      </a-entity>
+    </a-scene>
+
+    <script>
+      // ─── STATE ───────────────────────────────────────────────────
+      const DEFAULT_DUR = 25000;
+      let currentDur = DEFAULT_DUR;
+      let landmarksVisible = false;
+      let atmosphereVisible = true;
+      let orbitMode = false;
+      let orbitAngle = 0;
+      let sunAngle = 0;
+      let isLocked = false;
+      let mouseActive = false;
+
+      // Mouse look state
+      let yaw = 0,
+        pitch = 0;
+      const SENSITIVITY = 0.002;
+
+      // ─── ELEMENTS ────────────────────────────────────────────────
+      const earth = document.querySelector("#earth-globe");
+      const sunGroup = document.querySelector("#sun-group");
+      const landmarks = document.querySelector("#landmarks");
+      const atmosphere = document.querySelector("#atmosphere");
+      const rig = document.querySelector("#rig");
+      const camEntity = document.querySelector("#camera-entity");
+      const lockScreen = document.querySelector("#pointer-lock-screen");
+      const hintEl = document.querySelector("#control-hint");
+      const toast = document.querySelector("#toast");
+
+      // ─── PROCEDURAL ASTEROIDS ────────────────────────────────────
+      const beltEl = document.querySelector("#asteroid-belt");
+      for (let i = 0; i < 80; i++) {
+        const angle = (i / 80) * Math.PI * 2;
+        const r = 10 + Math.random() * 3;
+        const x = Math.cos(angle) * r;
+        const z = Math.sin(angle) * r;
+        const y = (Math.random() - 0.5) * 0.5;
+        const size = 0.03 + Math.random() * 0.06;
+        const ast = document.createElement("a-icosahedron");
+        ast.setAttribute("position", `${x} ${y} ${z}`);
+        ast.setAttribute("radius", size);
+        ast.setAttribute("material", "color: #888; roughness: 1");
+        ast.setAttribute("detail", "0");
+        beltEl.appendChild(ast);
+      }
+      beltEl.setAttribute(
+        "animation",
+        "property: rotation; to: 0 360 0; dur: 300000; loop: true; easing: linear",
+      );
+
+      // ─── TOAST HELPER ────────────────────────────────────────────
+      let toastTimer;
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+
+      // ─── SPEED DISPLAY ───────────────────────────────────────────
+      function updateSpeedDisplay() {
+        const ratio = DEFAULT_DUR / currentDur;
+        const bar = document.getElementById("speed-bar");
+        const val = document.getElementById("speed-value");
+        const pct = Math.min(100, Math.max(5, (ratio / 5) * 100));
+        bar.style.width = pct + "%";
+        val.textContent = ratio.toFixed(1);
+        document.getElementById("stat-period").textContent =
+          (currentDur / 1000).toFixed(1) + "s";
+      }
+
+      // ─── BUTTON ACTIONS ──────────────────────────────────────────
+      document.getElementById("btn-fast").addEventListener("click", () => {
+        currentDur = Math.max(2000, currentDur - 5000);
+        earth.setAttribute(
+          "animation",
+          `property: rotation; to: 0 360 0; loop: true; dur: ${currentDur}; easing: linear`,
+        );
+        updateSpeedDisplay();
+        showToast("⚡ Rotation speed increased");
+      });
+
+      document.getElementById("btn-slow").addEventListener("click", () => {
+        currentDur = Math.min(120000, currentDur + 5000);
+        earth.setAttribute(
+          "animation",
+          `property: rotation; to: 0 360 0; loop: true; dur: ${currentDur}; easing: linear`,
+        );
+        updateSpeedDisplay();
+        showToast("🌀 Rotation speed decreased");
+      });
+
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        currentDur = DEFAULT_DUR;
+        earth.setAttribute(
+          "animation",
+          `property: rotation; to: 0 360 0; loop: true; dur: ${currentDur}; easing: linear`,
+        );
+        updateSpeedDisplay();
+        showToast("↺ Speed reset to default");
+      });
+
+      document.getElementById("btn-landmarks").addEventListener("click", () => {
+        landmarksVisible = !landmarksVisible;
+        landmarks.setAttribute("visible", landmarksVisible);
+        const btn = document.getElementById("btn-landmarks");
+        btn.classList.toggle("active", landmarksVisible);
+        showToast(landmarksVisible ? "📍 Landmarks ON" : "📍 Landmarks OFF");
+      });
+
+      document.getElementById("btn-time").addEventListener("click", () => {
+        sunAngle = (sunAngle + 90) % 360;
+        sunGroup.setAttribute("rotation", `0 ${sunAngle} 0`);
+        document.getElementById("stat-sun").textContent = sunAngle + "°";
+        showToast("☀ Time advanced +90°");
+      });
+
+      document
+        .getElementById("btn-atmosphere")
+        .addEventListener("click", () => {
+          atmosphereVisible = !atmosphereVisible;
+          atmosphere.setAttribute("visible", atmosphereVisible);
+          document
+            .getElementById("btn-atmosphere")
+            .classList.toggle("active", !atmosphereVisible);
+          showToast(
+            atmosphereVisible ? "🌫 Atmosphere ON" : "🌫 Atmosphere OFF",
+          );
+        });
+
+      document.getElementById("btn-orbit").addEventListener("click", () => {
+        orbitMode = !orbitMode;
+        document
+          .getElementById("btn-orbit")
+          .classList.toggle("active", orbitMode);
+        showToast(orbitMode ? "🪐 Orbit mode ON" : "🪐 Orbit mode OFF");
+      });
+
+      // ─── MOUSE LOOK (without pointer lock for simplicity) ────────
+      let isDragging = false;
+      let lastX = 0,
+        lastY = 0;
+      const canvas = document.querySelector("a-scene");
+
+      // Right-click drag or middle-click for look
+      canvas.addEventListener("mousedown", (e) => {
+        if (e.button === 0 || e.button === 2) {
+          // Check HUD click
+          if (e.target.closest && e.target.closest("#hud")) return;
+          isDragging = true;
+          lastX = e.clientX;
+          lastY = e.clientY;
+          document.body.style.cursor = "grabbing";
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+        document.body.style.cursor = "default";
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+
+        yaw -= dx * SENSITIVITY * (180 / Math.PI);
+        pitch -= dy * SENSITIVITY * (180 / Math.PI);
+        pitch = Math.max(-89, Math.min(89, pitch));
+
+        camEntity.setAttribute("rotation", `${pitch} ${yaw} 0`);
+      });
+
+      // Pointer lock for immersive mode (click lock screen)
+      lockScreen.addEventListener("click", () => {
+        lockScreen.classList.add("hidden");
+        showToast("🚀 Entering cosmos — drag to look · scroll to zoom");
+        setTimeout(() => hintEl.classList.add("hidden"), 5000);
+      });
+
+      // ─── KEYBOARD MOVEMENT ───────────────────────────────────────
+      const keys = {};
+      window.addEventListener("keydown", (e) => {
+        keys[e.code] = true;
+      });
+      window.addEventListener("keyup", (e) => {
+        keys[e.code] = false;
+      });
+
+      function updateMovement() {
+        const speed = 0.05;
+        let pos = rig.getAttribute("position");
+        if (!pos) return;
+
+        // Camera forward vector from yaw
+        const rad = (yaw * Math.PI) / 180;
+        const fx = -Math.sin(rad);
+        const fz = -Math.cos(rad);
+
+        if (keys["KeyW"] || keys["ArrowUp"]) {
+          pos.x += fx * speed;
+          pos.z += fz * speed;
+        }
+        if (keys["KeyS"] || keys["ArrowDown"]) {
+          pos.x -= fx * speed;
+          pos.z -= fz * speed;
+        }
+        if (keys["KeyA"] || keys["ArrowLeft"]) {
+          pos.x -= fz * speed;
+          pos.z += fx * speed;
+        }
+        if (keys["KeyD"] || keys["ArrowRight"]) {
+          pos.x += fz * speed;
+          pos.z -= fx * speed;
+        }
+        if (keys["KeyQ"] || keys["Space"]) {
+          pos.y += speed;
+        }
+        if (keys["KeyE"] || keys["ShiftLeft"]) {
+          pos.y -= speed;
+        }
+
+        rig.setAttribute("position", pos);
+      }
+
+      // ─── SCROLL ZOOM ─────────────────────────────────────────────
+      window.addEventListener(
+        "wheel",
+        (e) => {
+          if (e.target.closest && e.target.closest("#hud")) return;
+          let pos = rig.getAttribute("position");
+          const rad = (yaw * Math.PI) / 180;
+          const speed = e.deltaY * 0.008;
+          pos.x -= Math.sin(rad) * speed;
+          pos.z -= Math.cos(rad) * speed;
+          rig.setAttribute("position", pos);
+          e.preventDefault();
+        },
+        { passive: false },
+      );
+
+      // ─── ORBIT MODE ──────────────────────────────────────────────
+      function updateOrbit() {
+        if (!orbitMode) return;
+        orbitAngle += 0.003;
+        const r = 6;
+        const x = Math.sin(orbitAngle) * r;
+        const z = Math.cos(orbitAngle) * r - 4;
+        rig.setAttribute("position", `${x} 1.6 ${z}`);
+        // Look at earth
+        const earthPos = { x: 0, y: 1.5, z: -4 };
+        yaw = -((Math.atan2(x - earthPos.x, z - earthPos.z) * 180) / Math.PI);
+        camEntity.setAttribute("rotation", `0 ${yaw} 0`);
+      }
+
+      // ─── ALTITUDE DISPLAY ────────────────────────────────────────
+      function updateAltitude() {
+        const pos = rig.getAttribute("position");
+        if (!pos) return;
+        const earthWorldPos = { x: 0, y: 1.5, z: -4 };
+        const dist = Math.sqrt(
+          Math.pow(pos.x - earthWorldPos.x, 2) +
+            Math.pow(pos.y - earthWorldPos.y, 2) +
+            Math.pow(pos.z - earthWorldPos.z, 2),
+        );
+        document.getElementById("stat-alt").textContent =
+          dist.toFixed(1) + " u";
+      }
+
+      // ─── GAME LOOP ───────────────────────────────────────────────
+      function gameLoop() {
+        updateMovement();
+        updateOrbit();
+        updateAltitude();
+        requestAnimationFrame(gameLoop);
+      }
+      gameLoop();
+
+      // ─── DISABLE CONTEXT MENU ────────────────────────────────────
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      // ─── INIT ────────────────────────────────────────────────────
+      updateSpeedDisplay();
+    </script>
+  </body>
+</html>
