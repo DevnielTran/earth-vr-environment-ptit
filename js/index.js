@@ -85,7 +85,7 @@ function initWebVR() {
         if(vrDisplays.length) {
             vrDisplay = vrDisplays[0];
             // Apply VR headset positional data to camera
-            controls = new THREE.VRControls(poseCamera);
+            controls = new THREE.VRControls(poseCamera, renderer.domElement);
             controls.standing = true;
             // Kick off the render loop
             vrDisplay.requestAnimationFrame(animate);
@@ -93,7 +93,7 @@ function initWebVR() {
         // Otherwise we're on a desktop environment with no native
         // displays, thus provide the controls for a monoscopic view
         else {
-            controls = new THREE.OrbitControls(camera);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.minDistance = minDistance;
             controls.maxDistance = maxDistance;
             controls.target.set(0, 0, 0);

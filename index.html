@@ -34,6 +34,8 @@
 <script src="https://cdn.jsdelivr.net/npm/webvr-ui@0.9.4/build/webvr-ui.min.js"></script>
 <!-- Shader program -->
 <script src="js/shader.js"></script>
+<!-- Starfield generator -->
+<script src="js/starfield.js"></script>
 <!-- Initialization program -->
 <script src="js/index.js"></script>
 <!-- Rendering -->
@@ -64,7 +66,28 @@
                 <i class="material-icons left">visibility</i>
                 Try without headset
             </a>
+            <a href="#settings" class="waves-effect waves-light btn modal-trigger" style="margin:4px;">
+                <i class="material-icons left">settings</i>
+                Settings
+            </a>
         </div>
+    </div>
+
+    <!-- Floating Rotation Speed HUD -->
+    <div id="speed-hud">
+        <div class="hud-title">&#9881; Rotation Speed</div>
+        <label>
+            <span>Earth</span>
+            <span class="val-label" id="hud-earth-val">1.0x</span>
+        </label>
+        <input id="hudEarthSlider" type="range" min="0" max="5" step="0.1" value="1"
+               oninput="syncEarthSpeed(this.value);">
+        <label>
+            <span>Moon</span>
+            <span class="val-label" id="hud-moon-val">1.0x</span>
+        </label>
+        <input id="hudMoonSlider" type="range" min="0" max="5" step="0.1" value="1"
+               oninput="syncMoonSpeed(this.value);">
     </div>
     <div id="settings" class="modal" style="overflow:hidden;height:70%;min-height:250px;">
         <div style="position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;">
@@ -157,10 +180,42 @@
                         </div>
                     </div>
                 </div>
+                <h6>Rotation Speed</h6>
+                <div class="row" style="margin-bottom:0;">
+                    <div class="col s12">
+                        <label>Earth Rotation: <span id="earth-speed-value" class="speed-badge">1.0x</span></label>
+                        <input id="earthRotationSlider" type="range" min="0" max="5" step="0.1" value="1"
+                               oninput="syncEarthSpeed(this.value);" style="width: 100%;">
+                    </div>
+                </div>
+                <div class="row" style="margin-bottom:0;">
+                    <div class="col s12">
+                        <label>Moon Rotation: <span id="moon-speed-value" class="speed-badge">1.0x</span></label>
+                        <input id="moonRotationSlider" type="range" min="0" max="5" step="0.1" value="1"
+                               oninput="syncMoonSpeed(this.value);" style="width: 100%;">
+                    </div>
+                </div>
             </div>
             <script>
                 function updateTimeScale() {
                     timeScale = parseFloat($('input[name="time-scale"]:checked').val());
+                }
+                // Syncs both modal slider + HUD slider + global speed var
+                function syncEarthSpeed(val) {
+                    earthRotationSpeed = parseFloat(val);
+                    var label = earthRotationSpeed.toFixed(1) + 'x';
+                    $('#earth-speed-value').text(label);
+                    $('#hud-earth-val').text(label);
+                    $('#earthRotationSlider').val(val);
+                    $('#hudEarthSlider').val(val);
+                }
+                function syncMoonSpeed(val) {
+                    moonRotationSpeed = parseFloat(val);
+                    var label = moonRotationSpeed.toFixed(1) + 'x';
+                    $('#moon-speed-value').text(label);
+                    $('#hud-moon-val').text(label);
+                    $('#moonRotationSlider').val(val);
+                    $('#hudMoonSlider').val(val);
                 }
             </script>
             <div class="modal-footer" style="flex:0 0 auto;">
@@ -261,9 +316,8 @@
             $('.datepicker').datepicker({
                 autoClose: true,
                 container: 'body',
-                onSelect: function () {
-                    var date = new Date(this.toString());
-                    currentTime.setYear(date.getFullYear());
+                onSelect: function (date) {
+                    currentTime.setFullYear(date.getFullYear());
                     currentTime.setMonth(date.getMonth());
                     currentTime.setDate(date.getDate());
                 }
