@@ -66,8 +66,6 @@ function createStarfield() {
 
 // Alternative: Enhanced skybox with more detail
 function enhanceSkyboxWithStars() {
-  // If you want to keep using the cube map but enhance it,
-  // you can layer the procedural stars on top
   var stars = createStarfield();
   return stars;
 }
