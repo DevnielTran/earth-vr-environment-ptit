@@ -83,6 +83,32 @@ async function init() {
     // ── Event Listeners ──
     window.addEventListener('resize', onWindowResize);
     
+    // VR Session Management
+    renderer.xr.addEventListener('sessionstart', () => {
+        // Disable OrbitControls in VR — stick movement handles everything
+        controls.enabled = false;
+        
+        // Position the cameraGroup where the camera was in 2D view
+        // so the user starts at the same vantage point
+        cameraTransform.update(cameraGroup);
+        
+        // Reset camera LOCAL pose to origin (XR tracking will handle head position)
+        camera.position.set(0, 0, 0);
+        camera.quaternion.set(0, 0, 0, 1);
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+        // Re-enable OrbitControls for 2D
+        controls.enabled = true;
+        
+        // Restore camera position from cameraTransform state
+        cameraTransform.update(camera);
+        
+        // Reset cameraGroup to origin (not needed in 2D)
+        cameraGroup.position.set(0, 0, 0);
+        cameraGroup.quaternion.set(0, 0, 0, 1);
+    });
+
     // Mouse/Touch Interaction for POI
     const updateMouse = (x, y) => {
         if (poiManager) {

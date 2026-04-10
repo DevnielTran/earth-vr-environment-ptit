@@ -12,34 +12,28 @@ export function updateGamepad(earthHUD, moonHUD) {
     if (!gp) return;
 
     // Axis 0 & 1: Rotation
-    if(gp.axes[0] > 0.2) {
-        cameraTransform.increaseTheta();
-    } else if(gp.axes[0] < -0.2) {
-        cameraTransform.decreaseTheta();
+    if(Math.abs(gp.axes[0]) > 0.2) {
+        cameraTransform.moveTheta(gp.axes[0] * 0.05);
     }
 
     // Button 5 (R1/RB) combo with Axis 1 for Zoom
     if(gp.buttons[5] && gp.buttons[5].pressed) {
-        if(gp.axes[1] > 0.2) {
-            cameraTransform.goFarther();
-        } else if(gp.axes[1] < -0.2) {
-            cameraTransform.goNearer();
+        if(Math.abs(gp.axes[1]) > 0.2) {
+            cameraTransform.moveDistance(gp.axes[1] * 0.5);
         }
     } else {
         // Axis 1: Phi rotation
-        if(gp.axes[1] > 0.2) {
-            cameraTransform.decreasePhi();
-        } else if(gp.axes[1] < -0.2) {
-            cameraTransform.increasePhi();
+        if(Math.abs(gp.axes[1]) > 0.2) {
+            cameraTransform.movePhi(-gp.axes[1] * 0.05);
         }
     }
 
     // Direct buttons for zoom (A/B or similar)
     if(gp.buttons[0] && gp.buttons[0].pressed) {
-        cameraTransform.goNearer();
+        cameraTransform.moveDistance(-0.2);
     }
     if(gp.buttons[1] && gp.buttons[1].pressed) {
-        cameraTransform.goFarther();
+        cameraTransform.moveDistance(0.2);
     }
 
     // Time scaling (B3 / B2)

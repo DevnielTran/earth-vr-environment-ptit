@@ -48,14 +48,14 @@ export var VRHelpPanel = function (scene, camera) {
 
     context.fillText("● B / Y: Mở/Tắt Menu", 45, startY);
     context.fillText("● Grip (Cạnh): Phóng Meteor", 45, startY + step);
-    context.fillText("● Stick L/R: Chỉnh tốc độ", 45, startY + step * 2);
+    context.fillText("● A / X: Reset Earth", 45, startY + step * 2);
     context.fillText("● Stick Click: Tận thế", 45, startY + step * 3);
-    context.fillText("● A / X: Reset Earth", 45, startY + step * 4);
+    context.fillText("● Left Stick: Bay quanh Trái Đất", 45, startY + step * 4);
 
     context.fillStyle = "#ffff00";
     context.font = "italic 19px Arial";
     context.fillText(
-      "(Menu sẽ tự định vị theo hướng nhìn)",
+      "Right Stick: Zoom (Y) + Tốc độ (X)",
       45,
       startY + step * 5 + 15,
     );
@@ -65,7 +65,9 @@ export var VRHelpPanel = function (scene, camera) {
 
   this.update = function () {
     if (this.plane && this.plane.visible) {
-      this.plane.lookAt(camera.position);
+      const camWorldPos = new THREE.Vector3();
+      camera.getWorldPosition(camWorldPos);
+      this.plane.lookAt(camWorldPos);
     }
   };
 

@@ -55,18 +55,23 @@ export const cameraTransform = new (function () {
     }
   };
 
-  this.increaseTheta = function () {
-    var offset = 0.01;
-    this.cameraTheta += offset;
+  this.moveTheta = function (delta) {
+    this.cameraTheta += delta;
     if (this.cameraTheta > 2 * Math.PI) this.cameraTheta -= 2 * Math.PI;
     if (this.cameraTheta < 0) this.cameraTheta += 2 * Math.PI;
   };
 
-  this.decreaseTheta = function () {
-    var offset = 0.01;
-    this.cameraTheta -= offset;
-    if (this.cameraTheta > 2 * Math.PI) this.cameraTheta -= 2 * Math.PI;
-    if (this.cameraTheta < 0) this.cameraTheta += 2 * Math.PI;
+  this.movePhi = function (delta) {
+    const offset = 0.01;
+    this.cameraPhi += delta;
+    // Clamp to avoid flipping over poles
+    this.cameraPhi = Math.max(-Math.PI / 2 + offset, Math.min(Math.PI / 2 - offset, this.cameraPhi));
+  };
+
+  this.moveDistance = function (delta) {
+    this.cameraDistance += delta;
+    // Clamp to min/max
+    this.cameraDistance = Math.max(minDistance, Math.min(maxDistance, this.cameraDistance));
   };
 
   this.update = function (target) {

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { formatVietnamTime, setTimeScale, timeScale } from './time.js';
 import { resetEarth, launchMeteor, toggleDoomsday } from './render.js';
+import { cameraTransform } from './transform.js';
 
 export var vrMenuGroup = null;
 var vrMenuCanvas = null;
@@ -58,9 +59,10 @@ export function updateVRMenuCanvas() {
   vrMenuContext.font = "20px Arial";
   vrMenuContext.textAlign = "left";
   vrMenuContext.fillText("A/X: Reset Earth", 30, 95);
-  vrMenuContext.fillText("B/Y: Close Menu", 30, 125);
+  vrMenuContext.fillText("B/Y: Toggle Menu", 30, 125);
   vrMenuContext.fillText("Grip: Launch Meteor", 30, 155);
   vrMenuContext.fillText("Stick Click: Doomsday", 30, 185);
+  vrMenuContext.fillText("L-Stick: Orbit | R-Stick: Zoom", 30, 215);
 
   vrMenuContext.fillStyle = "#ffaa00";
   vrMenuContext.fillText(
@@ -97,10 +99,13 @@ export function updateVRControllers(renderer, scene, camera) {
         menuState.isMenuVisible = !menuState.isMenuVisible;
         vrMenuGroup.visible = menuState.isMenuVisible;
         if (menuState.isMenuVisible) {
-            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            const pos = camera.position.clone().add(direction.multiplyScalar(15));
+            const camWorldPos = new THREE.Vector3();
+            const camWorldDir = new THREE.Vector3();
+            camera.getWorldPosition(camWorldPos);
+            camera.getWorldDirection(camWorldDir);
+            const pos = camWorldPos.clone().add(camWorldDir.multiplyScalar(10));
             vrMenuGroup.position.copy(pos);
-            vrMenuGroup.lookAt(camera.position);
+            vrMenuGroup.lookAt(camWorldPos);
         }
         menuState.lastButtonPress = now;
       }
@@ -132,19 +137,39 @@ export function updateVRControllers(renderer, scene, camera) {
         }
     }
 
-    // Time Scaling (Stick X: axis 2) - Always active for convenience
-    const xAxe = gamepad.axes[2];
-    if (Math.abs(xAxe) > 0.5) {
-        if (now - menuState.lastButtonPress > 100) {
-            let newScale = timeScale + (xAxe > 0 ? 500 : -500);
-            newScale = Math.max(0, Math.min(20000, newScale));
-            setTimeScale(newScale);
-            if (document.getElementById("hudTimeSlider")) {
-                document.getElementById("hudTimeSlider").value = newScale;
-                document.getElementById("hud-time-val").innerText = newScale + "x";
+    // --- Movement & Scaling (Sticks) ---
+    
+    // Left Controller (Index 0 typically) - Rotation
+    if (source.handedness === 'left') {
+        const stickX = gamepad.axes[2];
+        const stickY = gamepad.axes[3];
+        if (Math.abs(stickX) > 0.1) cameraTransform.moveTheta(stickX * 0.03);
+        if (Math.abs(stickY) > 0.1) cameraTransform.movePhi(-stickY * 0.03);
+    }
+
+    // Right Controller (Index 1 typically) - Zoom & Time
+    if (source.handedness === 'right') {
+        const stickX = gamepad.axes[2];
+        const stickY = gamepad.axes[3];
+        
+        // Horizontal: Time Scaling
+        if (Math.abs(stickX) > 0.5) {
+            if (now - menuState.lastButtonPress > 100) {
+                let newScale = timeScale + (stickX > 0 ? 500 : -500);
+                newScale = Math.max(0, Math.min(20000, newScale));
+                setTimeScale(newScale);
+                if (document.getElementById("hudTimeSlider")) {
+                    document.getElementById("hudTimeSlider").value = newScale;
+                    document.getElementById("hud-time-val").innerText = newScale + "x";
+                }
+                updateVRMenuCanvas();
+                menuState.lastButtonPress = now;
             }
-            updateVRMenuCanvas();
-            menuState.lastButtonPress = now;
+        }
+        
+        // Vertical: Zoom (Distance)
+        if (Math.abs(stickY) > 0.1) {
+            cameraTransform.moveDistance(stickY * 0.5);
         }
     }
   });
