@@ -99,28 +99,37 @@ $(window).bind("vrdisplaypresentchange", onResize);
 
 function initWebVR() {
   // Controls initializaiton
-  navigator.getVRDisplays().then(function (vrDisplays) {
-    // If we have a native display, or a Cardboard VR Display, then use it
-    if (vrDisplays.length) {
-      vrDisplay = vrDisplays[0];
-      // Apply VR headset positional data to camera
-      controls = new THREE.VRControls(poseCamera, renderer.domElement);
-      controls.standing = true;
-      // Kick off the render loop
-      vrDisplay.requestAnimationFrame(animate);
-    }
-    // Otherwise we're on a desktop environment with no native
-    // displays, thus provide the controls for a monoscopic view
-    else {
-      controls = new THREE.OrbitControls(camera, renderer.domElement);
-      controls.minDistance = minDistance;
-      controls.maxDistance = maxDistance;
-      controls.target.set(0, 0, 0);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.25;
-      requestAnimationFrame(animate);
-    }
-  });
+  if (navigator.getVRDisplays) {
+    navigator
+      .getVRDisplays()
+      .then(function (vrDisplays) {
+        // If we have a native display, or a Cardboard VR Display, then use it
+        if (vrDisplays.length) {
+          vrDisplay = vrDisplays[0];
+          // Apply VR headset positional data to camera
+          controls = new THREE.VRControls(poseCamera, renderer.domElement);
+          controls.standing = true;
+          // Kick off the render loop
+          if (vrDisplay && vrDisplay.requestAnimationFrame) {
+            vrDisplay.requestAnimationFrame(animate);
+          } else {
+            requestAnimationFrame(animate);
+          }
+        }
+        // Otherwise we're on a desktop environment with no native
+        // displays, thus provide the controls for a monoscopic view
+        else {
+          initOrbitControls();
+        }
+      })
+      .catch(function (e) {
+        console.warn("Error getting VR displays", e);
+        initOrbitControls();
+      });
+  } else {
+    initOrbitControls();
+  }
+
   vrButton = new webvrui.EnterVRButton(renderer.domElement, {
     color: "black",
     background: "white",
@@ -140,4 +149,14 @@ function initWebVR() {
   $("#magic-window").click(function () {
     vrButton.requestEnterFullscreen();
   });
+}
+
+function initOrbitControls() {
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.minDistance = minDistance;
+  controls.maxDistance = maxDistance;
+  controls.target.set(0, 0, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.25;
+  requestAnimationFrame(animate);
 }
