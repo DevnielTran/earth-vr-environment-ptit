@@ -70,7 +70,7 @@ $(document).ready(function () {
   initSceneObjects();
   earthHUD = new EarthHUD();
   scene.add(earthHUD.plane);
-  // moonHUD = new MoonHUD();
+  moonHUD = new MoonHUD();
   // POI Manager
   poiManager = new POIManager(scene, earthObject);
   poiManager.init();
@@ -83,12 +83,15 @@ $(document).ready(function () {
 
 // Window resize call back
 function onResize() {
+  // If we are currently inside VR, DO NOT resize to the normal 2D window dimensions!
+  if (vrDisplay && vrDisplay.isPresenting) {
+    return;
+  }
   effect.setSize(window.innerWidth, window.innerHeight);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 }
 $(window).resize(onResize);
-$(window).bind("vrdisplaypresentchange", onResize);
 
 function initWebVR() {
   // Controls initializaiton
@@ -113,6 +116,15 @@ function initWebVR() {
       controls.dampingFactor = 0.25;
       requestAnimationFrame(animate);
     }
+  }).catch(function(err) {
+    console.warn('Failed to get VR displays, falling back to OrbitControls:', err);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.minDistance = minDistance;
+    controls.maxDistance = maxDistance;
+    controls.target.set(0, 0, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    requestAnimationFrame(animate);
   });
   vrButton = new webvrui.EnterVRButton(renderer.domElement, {
     color: "black",

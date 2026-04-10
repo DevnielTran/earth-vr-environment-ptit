@@ -12,28 +12,20 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
 <!-- Three.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/92/three.min.js"></script>
+<!-- WebVR Polyfill (provides VR API on non-VR desktop browsers) -->
+<script src="https://cdn.jsdelivr.net/npm/webvr-polyfill@0.10.5/build/webvr-polyfill.min.js"></script>
+<!-- WebXR to WebVR Shim (overrides polyfill on WebXR-native browsers like Quest 3) -->
+<script src="js/lib/webxr-shim.js"></script>
 <!-- Three.js VR controls -->
-<!-- Requesting positional information from connected VR device -->
-<!-- and apply the transformation to a camera. -->
-<!-- Src: https://github.com/mrdoob/three.js/blob/master/examples/js/controls/VRControls.js -->
 <script src="js/lib/VRControls.js"></script>
 <!-- Three.js VR effects -->
-<!-- Handles stereo camera setup and rendering -->
-<!-- Src: https://github.com/mrdoob/three.js/blob/master/examples/js/effects/VREffect.js -->
 <script src="js/lib/VREffect.js"></script>
 <!-- Three.js orbit controls -->
-<!-- Camera controling -->
-<!-- Src: https://github.com/mrdoob/three.js/raw/master/examples/js/controls/OrbitControls.js -->
 <script src="js/lib/OrbitControls.js"></script>
 <!-- Three.js lens flare -->
-<!-- Src: https://github.com/mrdoob/three.js/blob/master/examples/js/objects/Lensflare.js -->
 <script src="js/lib/Lensflare.js"></script>
-<!-- WebVR Polyfill -->
-<script src="https://cdn.jsdelivr.net/npm/webvr-polyfill@0.10.5/build/webvr-polyfill.min.js"></script>
 <!-- Google WebVR UI -->
 <script src="https://cdn.jsdelivr.net/npm/webvr-ui@0.9.4/build/webvr-ui.min.js"></script>
-<!-- WebXR Compatibility Shim -->
-<script src="js/lib/webxr-shim.js"></script>
 <!-- Shader program -->
 <script src="js/shader.js"></script>
 <!-- Starfield generator -->

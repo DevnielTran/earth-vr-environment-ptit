@@ -620,7 +620,7 @@ function animate(timestamp) {
   updateMoonLocation();
 
   if (earthHUD) earthHUD.update();
-  if (menuState.isMenuVisible && typeof updateVRMenuCanvas === "function") {
+  if (typeof menuState !== "undefined" && menuState.isMenuVisible && typeof updateVRMenuCanvas === "function") {
     updateVRMenuCanvas();
   }
 
@@ -631,10 +631,11 @@ function animate(timestamp) {
   if (vrDisplay) cameraTransform.update();
   if (vrDisplay) {
     vrDisplay.requestAnimationFrame(animate);
-    controls.update();
+    if (controls) controls.update();
     var cameraPosition = camera.position.clone();
     var cameraQuaterion = camera.quaternion.clone();
-    var rotatedPosition = poseCamera.position.applyQuaternion(
+    // IMPORTANT: clone poseCamera.position to avoid corrupting it in-place
+    var rotatedPosition = poseCamera.position.clone().applyQuaternion(
       camera.quaternion,
     );
     camera.position.add(rotatedPosition);
@@ -644,7 +645,7 @@ function animate(timestamp) {
     camera.quaternion.copy(cameraQuaterion);
   } else {
     requestAnimationFrame(animate);
-    controls.update();
+    if (controls) controls.update();
     effect.render(scene, camera);
   }
 }
