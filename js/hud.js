@@ -17,9 +17,6 @@ var EarthHUD = function () {
   var geometry = (this.geometry = new THREE.PlaneGeometry(20, 5));
   var plane = (this.plane = new THREE.Mesh(geometry, material));
   plane.position.set(0, 8, 0);
-  material.depthTest = false;
-  material.depthWrite = false;
-  plane.renderOrder = 999;
   // scene.add(plane);
   this.update = function () {
     if (this.visibility && this.transparency < this.maxTransparency) {

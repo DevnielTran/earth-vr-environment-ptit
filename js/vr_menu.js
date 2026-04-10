@@ -23,11 +23,8 @@ function initVRMenu() {
     map: vrMenuTexture,
     transparent: true,
   });
-  menuMaterial.depthTest = false;
-  menuMaterial.depthWrite = false;
   var menuGeometry = new THREE.PlaneGeometry(10, 5); // Size in 3D space
   var menuMesh = new THREE.Mesh(menuGeometry, menuMaterial);
-  menuMesh.renderOrder = 999;
 
   // Position menu in front of user
   menuMesh.position.set(0, 0, -15);
@@ -88,15 +85,6 @@ function updateVRControllers() {
         menuState.isMenuVisible = !menuState.isMenuVisible;
         vrMenuGroup.visible = menuState.isMenuVisible;
         menuState.lastButtonPress = now;
-
-        // Hide VR Help Tutorial when menu is opened for the first time
-        if (
-          menuState.isMenuVisible &&
-          typeof vrHelp !== "undefined" &&
-          vrHelp.plane
-        ) {
-          vrHelp.plane.visible = false;
-        }
       }
     }
 

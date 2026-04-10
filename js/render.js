@@ -620,8 +620,6 @@ function animate(timestamp) {
   updateMoonLocation();
 
   if (earthHUD) earthHUD.update();
-  if (vrHelp) vrHelp.update();
-
   if (menuState.isMenuVisible && typeof updateVRMenuCanvas === "function") {
     updateVRMenuCanvas();
   }
