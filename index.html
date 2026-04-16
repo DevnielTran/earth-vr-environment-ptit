@@ -56,6 +56,13 @@
             <button onclick="if(typeof toggleDoomsday==='function') toggleDoomsday()" class="btn-small red darken-4">Giant Meteor</button>
             <button onclick="if(typeof resetEarth==='function') resetEarth()" class="btn-small blue">Reset Earth</button>
         </div>
+        <div class="switch" style="margin-bottom: 15px;">
+            <label style="color: white; font-weight: bold;">
+                <input id="hudDeepSea" type="checkbox" onchange="if(window.toggleDeepSea) window.toggleDeepSea(this.checked); $('#modalDeepSea').prop('checked', this.checked);">
+                <span class="lever"></span>
+                Deep Sea Mode
+            </label>
+        </div>
         <label>
             <span>Time Speed</span>
             <span class="val-label" id="hud-time-val">5000x</span>
@@ -101,6 +108,13 @@
                             }
                         });
                     </script>
+                </div>
+                <div class="row switch">
+                    <label>
+                        <input id="modalDeepSea" type="checkbox" onchange="if(window.toggleDeepSea) window.toggleDeepSea(this.checked); $('#hudDeepSea').prop('checked', this.checked);">
+                        <span class="lever"></span>
+                        Deep Sea Topography
+                    </label>
                 </div>
                 <h6>Rotation Speed</h6>
                 <div class="row" style="margin-bottom:0;">

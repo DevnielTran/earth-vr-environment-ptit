@@ -69,12 +69,12 @@ varying vec3 vSunDir;
 
 void main() {
     vec4  cloudSample = texture2D( cloudTexture, vUv );
-    float opacity     = pow(cloudSample.r, 1.5) * 0.70;
+    float opacity     = pow(cloudSample.r, 2.5) * 0.40;
     float NdotL       = max( dot( normalize(vNormal), normalize(vSunDir) ), 0.0 );
     vec3  litColor    = mix( vec3(0.10, 0.13, 0.20), vec3(1.0, 0.98, 0.95), NdotL );
     float darkening   = smoothstep(-0.25, 0.35, NdotL);
     vec3  finalColor  = litColor * darkening;
-    gl_FragColor = vec4( finalColor, opacity * 0.92 );
+    gl_FragColor = vec4( finalColor, opacity * 0.75 );
 }
 `;
 
@@ -263,5 +263,89 @@ void main() {
     float nightMask = smoothstep(0.1, -0.2, dot(vNormal, toSun));
 
     gl_FragColor = vec4(auroraColor, alpha * nightMask);
+}
+`;
+
+// ============================================================
+// Bathymetry (Deep Sea) shaders
+// ============================================================
+export const bathymetryVS = `
+varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vSunDir;
+uniform vec3 sunPosition;
+
+void main() {
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    vSunDir = normalize((viewMatrix * vec4(sunPosition, 1.0)).xyz 
+              - (modelViewMatrix * vec4(position, 1.0)).xyz);
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+export const bathymetryFS = `
+uniform sampler2D dayTexture;
+uniform sampler2D bumpTexture;
+uniform float     transition; // 0.0 = Standard, 1.0 = Bathymetry
+uniform vec3      sunPosition;
+
+varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vSunDir;
+
+void main() {
+    vec4 dayColor = texture2D(dayTexture, vUv);
+    float height  = texture2D(bumpTexture, vUv).r;
+    
+    // Create bathymetry color ramp
+    vec3 deepOcean  = vec3(0.01, 0.02, 0.1);
+    vec3 midOcean   = vec3(0.0, 0.3, 0.6);
+    vec3 shelf      = vec3(0.0, 0.7, 0.8);
+    vec3 landHigh   = vec3(0.1, 0.4, 0.1);
+    vec3 landPeaks  = vec3(0.8, 0.8, 0.8);
+    
+    vec3 topoColor;
+    if (height < 0.3) {
+        topoColor = mix(deepOcean, midOcean, smoothstep(0.0, 0.3, height));
+    } else if (height < 0.5) {
+        topoColor = mix(midOcean, shelf, smoothstep(0.3, 0.5, height));
+    } else {
+        topoColor = mix(dayColor.rgb, landPeaks * dayColor.rgb, smoothstep(0.7, 1.0, height));
+    }
+    
+    // Lighting
+    float NdotL = max(dot(vNormal, vSunDir), 0.1);
+    
+    // Mix based on transition uniform
+    vec3 finalRGB = mix(dayColor.rgb, topoColor, transition);
+    gl_FragColor = vec4(finalRGB * (NdotL * 0.9 + 0.1), 1.0);
+}
+`;
+
+// ============================================================
+// Particle Trail shaders
+// ============================================================
+export const trailVS = `
+attribute float life;
+varying float vLife;
+
+void main() {
+    vLife = life;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = (1.0 + life * 2.0) * (300.0 / -mvPosition.z);
+    gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+export const trailFS = `
+varying float vLife;
+uniform vec3 color;
+
+void main() {
+    float d = distance(gl_PointCoord, vec2(0.5));
+    if (d > 0.5) discard;
+    float strength = (1.0 - d * 2.0);
+    gl_FragColor = vec4(color, strength * vLife * 0.8);
 }
 `;

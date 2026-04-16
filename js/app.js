@@ -5,7 +5,7 @@ import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { 
     initSkybox, initLight, initSceneObjects, 
     animateFrame, earthObject, moonObject, sunLight,
-    resetEarth, launchMeteor, toggleDoomsday
+    resetEarth, launchMeteor, toggleDoomsday, setDeepSeaMode
 } from './render.js';
 import { cameraTransform, minDistance, maxDistance, setEarthRotationSpeed, setMoonRotationSpeed } from './transform.js';
 import { EarthHUD, MoonHUD } from './hud.js';
@@ -14,10 +14,11 @@ import { initVRMenu, updateVRMenuCanvas, updateVRControllers } from './vr_menu.j
 import { VRHelpPanel } from './vr_help.js';
 import { setTimeScale } from './time.js';
 import { updateGamepad } from './control.js';
+import { TrafficManager } from './traffic.js';
 
 // ── Application State ────────────────────────────────────────────────────────
 let renderer, scene, camera, cameraGroup, controls;
-let earthHUD, moonHUD, poiManager, vrHelp;
+let earthHUD, moonHUD, poiManager, trafficManager, vrHelp;
 
 async function init() {
     // ── Renderer Setup ──
@@ -66,6 +67,9 @@ async function init() {
     poiManager = new POIManager(scene, earthObject, camera, renderer);
     poiManager.init();
 
+    trafficManager = new TrafficManager(scene, earthObject, poiManager.poiData);
+    trafficManager.init();
+
     vrHelp = new VRHelpPanel(scene, camera);
     initVRMenu(scene, camera);
 
@@ -76,6 +80,7 @@ async function init() {
     window.syncTimeSpeed = (val) => setTimeScale(parseFloat(val));
     window.syncEarthSpeed = (val) => setEarthRotationSpeed(parseFloat(val));
     window.syncMoonSpeed = (val) => setMoonRotationSpeed(parseFloat(val));
+    window.toggleDeepSea = (active) => setDeepSeaMode(active);
     window.earthHUD = earthHUD;
     window.moonHUD = moonHUD;
     window.renderer = renderer;
@@ -156,7 +161,7 @@ function animate(time) {
 
     animateFrame(
         delta, scene, camera, renderer, 
-        [earthHUD, moonHUD], poiManager, 
+        [earthHUD, moonHUD], poiManager, trafficManager,
         updateVRMenuCanvas, 
         () => updateVRControllers(renderer, scene, camera)
     );

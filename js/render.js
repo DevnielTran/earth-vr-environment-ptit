@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { Lensflare, LensflareElement } from 'three/addons/objects/Lensflare.js';
 import { 
   generalVS, nightFS, cloudVS, cloudFS, 
-  atmosphereVS, atmosphereFS, auroraVS, auroraFS 
+  atmosphereVS, atmosphereFS, auroraVS, auroraFS,
+  bathymetryVS, bathymetryFS, trailVS, trailFS
 } from './shader.js';
 import { createStarfield } from './starfield.js';
 import { updateTime, nowInYear, nowInDay, nowInLunarMonth } from './time.js';
@@ -35,6 +36,50 @@ let earthCraters = [];
 let impactRingGroup = null;
 let impactActive = false;
 
+let isDeepSeaMode = false;
+let deepSeaTransition = 0.0;
+let bathymetryMat = null;
+let originalEarthMat = null;
+
+let meteorTrail = null;
+let doomsdayTrail = null;
+
+function createTrailSystem(scene, count, size, color) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const life = new Float32Array(count); 
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('life', new THREE.BufferAttribute(life, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { color: { value: new THREE.Color(color) } },
+    vertexShader: trailVS, fragmentShader: trailFS,
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+  });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+  return { points, positions: pos, lifetimes: life, nextIdx: 0 };
+}
+
+function updateTrailSystem(system, headPos, delta, spawnRate, spread) {
+  const pos = system.positions;
+  const life = system.lifetimes;
+  for (let i = 0; i < life.length; i++) {
+    if (life[i] > 0) life[i] -= 0.0015 * delta;
+  }
+  if (headPos) {
+    for (let i = 0; i < spawnRate; i++) {
+      const idx = system.nextIdx;
+      pos[idx*3] = headPos.x + (Math.random() - 0.5) * spread;
+      pos[idx*3+1] = headPos.y + (Math.random() - 0.5) * spread;
+      pos[idx*3+2] = headPos.z + (Math.random() - 0.5) * spread;
+      life[idx] = 1.0;
+      system.nextIdx = (system.nextIdx + 1) % life.length;
+    }
+  }
+  system.points.geometry.attributes.position.needsUpdate = true;
+  system.points.geometry.attributes.life.needsUpdate = true;
+}
+
 export function initSkybox(scene) {
   var mwTexture = textureLoader.load("res/skybox/8k_stars_milky_way.jpg");
   mwTexture.wrapS = THREE.RepeatWrapping;
@@ -56,7 +101,11 @@ export function initSkybox(scene) {
 }
 
 export function initLight(scene) {
-  sunLight = new THREE.PointLight(0xffffff, 1.2);
+  // Ambient light so dark side of Earth is still visible
+  var ambientLight = new THREE.AmbientLight(0x334466, 0.35);
+  scene.add(ambientLight);
+
+  sunLight = new THREE.PointLight(0xffffff, 1.5);
   sunLight.decay = 0; // Maintain brightness in distance
 
   var textureFlare0 = textureLoader.load("res/effects/flare.jpg");
@@ -205,11 +254,19 @@ export function toggleDoomsday(scene) {
     doomsdayMeteorGroup.lookAt(0, 0, 0);
     doomsdayMeteorGroup.visible = true;
     doomsdayActive = true;
+
+    if (!doomsdayTrail) doomsdayTrail = createTrailSystem(scene, 150, 4.0, 0xffaa00);
+    // Clear trail
+    for (let i = 0; i < doomsdayTrail.lifetimes.length; i++) doomsdayTrail.lifetimes[i] = 0;
   }
 }
 
 export function updateDoomsdayLogic(delta, scene) {
   if (doomsdayActive && doomsdayMeteorGroup) {
+    var headPos = new THREE.Vector3();
+    doomsdayMeteorGroup.getWorldPosition(headPos);
+    updateTrailSystem(doomsdayTrail, headPos, delta, 3, 1.5);
+
     var dir = new THREE.Vector3().copy(doomsdayMeteorGroup.position).normalize().multiplyScalar(-1);
     var speed = 0.01;
     doomsdayMeteorGroup.position.addScaledVector(dir, speed * delta);
@@ -218,7 +275,11 @@ export function updateDoomsdayLogic(delta, scene) {
       doomsdayActive = false;
       doomsdayMeteorGroup.visible = false;
       shatterEarth(scene);
+      // Fade out trail
+      updateTrailSystem(doomsdayTrail, null, delta, 0, 0);
     }
+  } else if (doomsdayTrail) {
+    updateTrailSystem(doomsdayTrail, null, delta, 0, 0);
   }
 
   if (earthShattered) {
@@ -297,6 +358,10 @@ export function launchMeteor(scene) {
   meteorGroup.lookAt(0, 0, 0);
   meteorGroup.visible = true;
   meteorActive = true;
+
+  if (!meteorTrail) meteorTrail = createTrailSystem(scene, 80, 1.5, 0xff6600);
+  // Reset trail
+  for (let i = 0; i < meteorTrail.lifetimes.length; i++) meteorTrail.lifetimes[i] = 0;
 }
 
 export function createCrater(impactPos, earthObject) {
@@ -325,13 +390,20 @@ export function createCrater(impactPos, earthObject) {
     earthCraters.push(craterMesh);
 }
 
-export function updateMeteorLogic(delta, earthObject) {
+export function updateMeteorLogic(delta, earthObject, scene) {
   if (meteorActive && meteorGroup) {
+    var headPos = new THREE.Vector3();
+    meteorGroup.getWorldPosition(headPos);
+    updateTrailSystem(meteorTrail, headPos, delta, 2, 0.4);
+
     var dir = new THREE.Vector3().copy(meteorGroup.position).normalize().multiplyScalar(-1);
     var speed = 0.007;
     meteorGroup.position.addScaledVector(dir, speed * delta);
     if (meteorGroup.position.length() <= 6.3781 + 0.1) {
       meteorActive = false; meteorGroup.visible = false;
+      // Fade out trail
+      updateTrailSystem(meteorTrail, null, delta, 0, 0);
+      
       impactRingGroup.position.copy(meteorGroup.position);
       impactRingGroup.lookAt(0, 0, 0);
       impactRingGroup.getObjectByName("shockwave").scale.set(1, 1, 1);
@@ -340,7 +412,10 @@ export function updateMeteorLogic(delta, earthObject) {
       impactRingGroup.visible = true; impactActive = true;
       createCrater(meteorGroup.position, earthObject);
     }
+  } else if (meteorTrail) {
+    updateTrailSystem(meteorTrail, null, delta, 0, 0);
   }
+  
   if (impactActive && impactRingGroup && impactRingGroup.visible) {
     var sw = impactRingGroup.getObjectByName("shockwave");
     var fl = impactRingGroup.getObjectByName("flash");
@@ -361,6 +436,27 @@ export function resetEarth() {
     if (doomsdayFlash) doomsdayFlash.visible = false;
     if (planetShockwave) planetShockwave.visible = false;
     earthChunks.forEach(c => c.visible = false);
+  }
+}
+
+export function setDeepSeaMode(active) {
+  isDeepSeaMode = active;
+  
+  if (!bathymetryMat && earthObject) {
+    // Main mesh is the first child added to earthObject
+    var mainMesh = earthObject.children[0];
+    originalEarthMat = mainMesh.material;
+    
+    bathymetryMat = new THREE.ShaderMaterial({
+      uniforms: {
+        dayTexture: { value: textureLoader.load("res/earth/day-map.jpg") },
+        bumpTexture: { value: textureLoader.load("res/earth/bump.jpg") },
+        sunPosition: { value: sunLight.position },
+        transition: { value: 0.0 }
+      },
+      vertexShader: bathymetryVS,
+      fragmentShader: bathymetryFS
+    });
   }
 }
 
@@ -427,12 +523,16 @@ export function initSceneObjects(scene) {
   scene.add(moonObject);
 }
 
-export function animateFrame(delta, scene, camera, renderer, hudObjects, poiManager, vrMenuUpdate, vrControllersUpdate) {
+export function animateFrame(delta, scene, camera, renderer, hudObjects, poiManager, trafficManager, vrMenuUpdate, vrControllersUpdate) {
   auroraElapsed += delta * 0.001;
   
   if (poiManager) {
     poiManager.update(camera, poiManager.mouse);
     poiManager.animatePanel(camera);
+  }
+
+  if (trafficManager) {
+    trafficManager.update(delta);
   }
 
   if (!poiManager || !poiManager.hoveredPOI) {
@@ -445,8 +545,36 @@ export function animateFrame(delta, scene, camera, renderer, hudObjects, poiMana
   }
 
   updateEarthRotation(earthObject, delta);
-  updateMeteorLogic(delta, earthObject);
+  updateMeteorLogic(delta, earthObject, scene);
   updateDoomsdayLogic(delta, scene);
+
+  // Deep Sea Transition Logic
+  if (earthObject && bathymetryMat) {
+    var mainMesh = earthObject.children[0];
+    var cloudLayer = earthObject.getObjectByName("CloudLayer");
+    var nightMesh = earthObject.children[1];
+    var atmoMesh = earthObject.children[3];
+    var target = isDeepSeaMode ? 1.0 : 0.0;
+    
+    // Smooth transition
+    if (Math.abs(deepSeaTransition - target) > 0.01) {
+      deepSeaTransition += (target - deepSeaTransition) * 0.05;
+      bathymetryMat.uniforms.transition.value = deepSeaTransition;
+      
+      // Swap material when transition starts
+      if (deepSeaTransition > 0.01) {
+        mainMesh.material = bathymetryMat;
+      } else {
+        mainMesh.material = originalEarthMat;
+      }
+      
+      // Hide other layers as we go deeper
+      if (cloudLayer) cloudLayer.visible = (deepSeaTransition < 0.5);
+      if (nightMesh) nightMesh.visible = (deepSeaTransition < 0.3);
+      if (atmoMesh) atmoMesh.visible = (deepSeaTransition < 0.7);
+      if (trafficManager) trafficManager.trafficGroup.visible = (deepSeaTransition < 0.2);
+    }
+  }
 
   updateSunLocation(sunLight);
   updateMoonRotation(moonObject);
