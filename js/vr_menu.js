@@ -143,8 +143,31 @@ export function updateVRControllers(renderer, scene, camera) {
     if (source.handedness === 'left') {
         const stickX = gamepad.axes.length >= 3 ? gamepad.axes[2] : (gamepad.axes[0] || 0);
         const stickY = gamepad.axes.length >= 4 ? gamepad.axes[3] : (gamepad.axes[1] || 0);
-        if (Math.abs(stickX) > 0.1) cameraTransform.moveTheta(stickX * 0.03);
-        if (Math.abs(stickY) > 0.1) cameraTransform.movePhi(-stickY * 0.03);
+        if (Math.abs(stickX) > 0.1 || Math.abs(stickY) > 0.1) {
+            const speed = 0.03;
+            const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+            const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+            
+            let pos = new THREE.Vector3(
+              cameraTransform.cameraDistance * Math.sin(cameraTransform.cameraTheta) * Math.cos(cameraTransform.cameraPhi),
+              cameraTransform.cameraDistance * Math.sin(cameraTransform.cameraPhi),
+              cameraTransform.cameraDistance * Math.cos(cameraTransform.cameraTheta) * Math.cos(cameraTransform.cameraPhi)
+            );
+            
+            const oldPos = pos.clone();
+            const r = pos.length();
+            
+            if (Math.abs(stickY) > 0.1) pos.applyAxisAngle(camRight, stickY * speed);
+            if (Math.abs(stickX) > 0.1) pos.applyAxisAngle(camUp, stickX * speed);
+            
+            // Prevent lookAt gimbal lock flip by preventing traversing exactly over the pole
+            if (Math.abs(pos.y / r) > 0.99) {
+                 pos.copy(oldPos);
+            }
+            
+            cameraTransform.cameraPhi = Math.asin(pos.y / r);
+            cameraTransform.cameraTheta = Math.atan2(pos.x, pos.z);
+        }
     }
 
     // Right Controller (Index 1 typically) - Zoom & Time
